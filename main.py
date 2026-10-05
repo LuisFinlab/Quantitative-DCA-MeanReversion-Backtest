@@ -1,7 +1,7 @@
 import datetime
 import os
 import backtrader as bt
-from strategies.BollingerDCA import BollingerMeanReversion
+from BollingerDCA import BollingerMeanReversion
 
 if __name__ == '__main__':
     cerebro = bt.Cerebro()
