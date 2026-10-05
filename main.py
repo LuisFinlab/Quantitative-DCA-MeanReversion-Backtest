@@ -97,3 +97,5 @@ if __name__ == '__main__':
     print(f'Sharpe Ratio:     {sharpe:.2f}' if sharpe else 'Sharpe Ratio:     N/A')
     print(f'Max Drawdown:     {max_dd:.2f}%')
     print(f'Trades Cerrados:  {total_trades}')
+    # 📊 Renderizar el gráfico del backtest
+    cerebro.plot(style='candlestick', barup='green', bardown='red')
