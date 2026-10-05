@@ -98,4 +98,4 @@ if __name__ == '__main__':
     print(f'Max Drawdown:     {max_dd:.2f}%')
     print(f'Trades Cerrados:  {total_trades}')
     # 📊 Renderizar el gráfico del backtest
-    cerebro.plot(style='candlestick', barup='green', bardown='red')
+    cerebro.plot(style='candlestick', barup='green', bardown='red', iplot=False)
