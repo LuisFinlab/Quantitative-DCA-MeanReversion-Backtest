@@ -1,16 +1,16 @@
 import datetime
 import os
 import sys
+import pandas as pd
 import backtrader as bt
 import yfinance as yf
 from BollingerDCA import BollingerMeanReversion
 
 def obtener_ruta_datos():
     """
-    Gestiona la carga o descarga automática de datos históricos.
-    Aplana la estructura del CSV para garantizar compatibilidad con Backtrader GenericCSVData.
+    Gestiona la carga o descarga automática de datos históricos desde Yahoo Finance.
+    Genera un archivo CSV estándar limpio compatible con Backtrader.
     """
-    # 1. Si el usuario pasa una ruta personalizada por consola
     if len(sys.argv) > 1:
         ruta = sys.argv[1]
         if os.path.exists(ruta):
@@ -19,22 +19,18 @@ def obtener_ruta_datos():
         else:
             print(f"⚠️ El archivo '{ruta}' no existe. Generando datos por defecto...")
 
-    # 2. Garantizar que la carpeta data/ exista
     os.makedirs('data', exist_ok=True)
     ruta_default = 'data/MSFT_historical_data.csv'
 
-    # 3. Descargar y formatear datos
-    print("📥 Descargando y formateando datos históricos desde Yahoo Finance...")
+    print("📥 Descargando datos históricos desde Yahoo Finance...")
     df = yf.download('MSFT', start='2020-01-01', end='2026-12-31')
     
-    # Aplanar MultiIndex de columnas si existe (comportamiento habitual en yfinance reciente)
+    # Aplanar MultiIndex de columnas si yfinance entrega encabezados dobles
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
-    # Seleccionar solo las columnas estándar requeridas
+    # Reordenar y formatear columnas exactamente en el orden estándar
     df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
-    
-    # Guardar CSV limpio
     df.to_csv(ruta_default)
     print(f"✅ Datos guardados correctamente en {ruta_default}")
 
@@ -42,16 +38,19 @@ def obtener_ruta_datos():
 
 
 if __name__ == '__main__':
-    # Importar pandas localmente para la gestión de columnas
-    import pandas as pd
-
     cerebro = bt.Cerebro()
     cerebro.addstrategy(BollingerMeanReversion)
 
-    # Cargar o descargar datos dinámicamente
+    # Cargar datos
     data_path = obtener_ruta_datos()
 
-    # Mapeo exacto de datos para Backtrader
+    # 🟢 MAPEO EXACTO DE COLUMNAS CSV:
+    # Columna 0: Date
+    # Columna 1: Open
+    # Columna 2: High
+    # Columna 3: Low
+    # Columna 4: Close
+    # Columna 5: Volume
     data = bt.feeds.GenericCSVData(
         dataname=data_path,
         fromdate=datetime.datetime(2020, 1, 1),
@@ -63,8 +62,8 @@ if __name__ == '__main__':
         high=2,
         low=3,
         close=4,
-        volume=6,
-        openinterest=-1
+        volume=5,        # 👈 Ajustado a 5 (antes estaba en 6)
+        openinterest=-1  # -1 indica que no existe columna de Open Interest
     )
     cerebro.adddata(data)
 
@@ -73,7 +72,7 @@ if __name__ == '__main__':
     cerebro.broker.setcash(capital_inicial)
     cerebro.broker.setcommission(commission=0.001)
 
-    # Métricas y Analizadores Cuantitativos
+    # Analizadores Cuantitativos
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe', riskfreerate=0.04)
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
