@@ -8,7 +8,7 @@ from BollingerDCA import BollingerMeanReversion
 def obtener_ruta_datos():
     """
     Gestiona la carga o descarga automática de datos históricos.
-    Permite pasar una ruta por consola o descargar MSFT por defecto.
+    Aplana la estructura del CSV para garantizar compatibilidad con Backtrader GenericCSVData.
     """
     # 1. Si el usuario pasa una ruta personalizada por consola
     if len(sys.argv) > 1:
@@ -23,17 +23,20 @@ def obtener_ruta_datos():
     os.makedirs('data', exist_ok=True)
     ruta_default = 'data/MSFT_historical_data.csv'
 
-    # 3. Si no existe el CSV, lo descarga automáticamente
-    if not os.path.exists(ruta_default):
-        print("📥 Descargando datos históricos de MSFT desde Yahoo Finance...")
-        df = yf.download('MSFT', start='2020-01-01', end='2026-12-31')
-        
-        # Aplanar el índice de columnas si yfinance devuelve MultiIndex
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-            
-        df.to_csv(ruta_default)
-        print("✅ Descarga completada y guardada en data/MSFT_historical_data.csv")
+    # 3. Descargar y formatear datos
+    print("📥 Descargando y formateando datos históricos desde Yahoo Finance...")
+    df = yf.download('MSFT', start='2020-01-01', end='2026-12-31')
+    
+    # Aplanar MultiIndex de columnas si existe (comportamiento habitual en yfinance reciente)
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    # Seleccionar solo las columnas estándar requeridas
+    df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+    
+    # Guardar CSV limpio
+    df.to_csv(ruta_default)
+    print(f"✅ Datos guardados correctamente en {ruta_default}")
 
     return ruta_default
 
