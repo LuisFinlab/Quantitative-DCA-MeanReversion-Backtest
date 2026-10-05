@@ -6,6 +6,7 @@ import backtrader as bt
 import yfinance as yf
 from BollingerDCA import BollingerMeanReversion
 
+
 def obtener_ruta_datos():
     """
     Gestiona la carga o descarga automática de datos históricos desde Yahoo Finance.
@@ -22,17 +23,18 @@ def obtener_ruta_datos():
     os.makedirs('data', exist_ok=True)
     ruta_default = 'data/MSFT_historical_data.csv'
 
-    print("📥 Descargando datos históricos desde Yahoo Finance...")
-    df = yf.download('MSFT', start='2020-01-01', end='2026-12-31')
-    
-    # Aplanar MultiIndex de columnas si yfinance entrega encabezados dobles
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
+    if not os.path.exists(ruta_default):
+        print("📥 Descargando datos históricos desde Yahoo Finance...")
+        df = yf.download('MSFT', start='2020-01-01', end='2026-12-31')
 
-    # Reordenar y formatear columnas exactamente en el orden estándar
-    df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
-    df.to_csv(ruta_default)
-    print(f"✅ Datos guardados correctamente en {ruta_default}")
+        # Aplanar MultiIndex de columnas si yfinance entrega encabezados dobles
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        # Reordenar y formatear columnas exactamente en el orden estándar
+        df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+        df.to_csv(ruta_default)
+        print(f"✅ Datos guardados correctamente en {ruta_default}")
 
     return ruta_default
 
@@ -44,13 +46,7 @@ if __name__ == '__main__':
     # Cargar datos
     data_path = obtener_ruta_datos()
 
-    # 🟢 MAPEO EXACTO DE COLUMNAS CSV:
-    # Columna 0: Date
-    # Columna 1: Open
-    # Columna 2: High
-    # Columna 3: Low
-    # Columna 4: Close
-    # Columna 5: Volume
+    # Mapeo estándar de columnas CSV
     data = bt.feeds.GenericCSVData(
         dataname=data_path,
         fromdate=datetime.datetime(2020, 1, 1),
@@ -62,8 +58,8 @@ if __name__ == '__main__':
         high=2,
         low=3,
         close=4,
-        volume=5,        # 👈 Ajustado a 5 (antes estaba en 6)
-        openinterest=-1  # -1 indica que no existe columna de Open Interest
+        volume=5,
+        openinterest=-1
     )
     cerebro.adddata(data)
 
@@ -79,7 +75,7 @@ if __name__ == '__main__':
 
     print('\n--- INICIO DE BACKTEST ---')
     print(f'Capital Inicial: ${capital_inicial:,.2f}')
-    
+
     results = cerebro.run()
     strat = results[0]
 
@@ -97,5 +93,6 @@ if __name__ == '__main__':
     print(f'Sharpe Ratio:     {sharpe:.2f}' if sharpe else 'Sharpe Ratio:     N/A')
     print(f'Max Drawdown:     {max_dd:.2f}%')
     print(f'Trades Cerrados:  {total_trades}')
-    # 📊 Renderizar el gráfico del backtest
-    cerebro.plot(style='candlestick', barup='green', bardown='red', iplot=False)
+
+    # 📊 Renderizar el gráfico interactivo de Matplotlib
+    cerebro.plot(style='candlestick', barup='green', bardown='red')
